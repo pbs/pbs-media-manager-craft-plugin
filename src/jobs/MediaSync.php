@@ -114,6 +114,49 @@ class MediaSync extends BaseJob
                 switch( $apiField ) {
                     case 'thumbnail':
                     break;
+                    case 'images':
+                        $imagesHandle = SynchronizeHelper::getApiField( $apiField );
+                        $fieldRule    = SynchronizeHelper::getApiFieldRule( $apiField );
+
+                        if( isset( $assetAttributes->images ) && is_array( $assetAttributes->images ) ) {
+                            
+                            $assets = [];
+
+                            foreach( $assetAttributes->images as $image ) {
+
+                                if( $fieldRule ) {
+
+                                    preg_match( '/'. $fieldRule .'/', $image->profile, $matches );
+
+                                    if( count( $matches ) ) {
+
+                                        $asset = $this->createOrUpdateThumbnail( $entry->title, $image );
+
+                                        if( $asset && isset( $asset->id ) ) {
+                                            $assets[] = $asset->id;
+                                        }
+                                    }
+
+                                    continue;
+                                }
+
+                                $asset = $this->createOrUpdateThumbnail( $entry->title, $image );
+
+                                if( $asset && isset( $asset->id ) ) {
+                                    $assets[] = $asset->id;
+                                }
+                            }
+
+                            if( $assets ) {
+                                $defaultFields[ $imagesHandle ] = $assets;
+                            }
+                        }
+                    break;
+                    case 'video_address':
+                        if( isset( $assetAttributes->slug ) ) {
+                            $defaultFields[ SynchronizeHelper::getApiField( $apiField ) ] = 'https://pbs.org/video/' . $assetAttributes->slug;
+                        }
+                    break;
                     case 'display_passport_icon':
                         $defaultFields[ SynchronizeHelper::getDisplayPassportIconField() ] = $displayPassportIcon;
                     break;
@@ -517,7 +560,7 @@ class MediaSync extends BaseJob
 
         if( $asset ) {
 
-            // Need to regenerate if existing asset is inaccesslbe by some sites
+            // Need to regenerate if existing asset is inaccessible by some sites
             if( $this->compareEnabledSupportedSites( $asset ) ) {
                 return $asset;
             }
@@ -529,28 +572,45 @@ class MediaSync extends BaseJob
     private function determineExpirationStatus( $date )
     {
         if( !$date ) {
-            return null;
+            return '';
         }
 
         $generalEndDate   = strtotime( $date );
         $currentTime      = strtotime( 'now' );
-        $eightDaysFromNow = strtotime( '+8 days' );
+        $sevenDaysFromNow = strtotime( '+7 days' );
+        $twoDaysFromNow   = strtotime( '+2 days' );
+        $twoHoursFromNow  = strtotime( '+2 hours' );
 
-        if( date( 'Y-m-d', $generalEndDate ) == date( 'Y-m-d', $currentTime ) ) {
-            return 'Expires today';
-        } elseif( $generalEndDate > $currentTime && $generalEndDate < $eightDaysFromNow ) {
-            
-            $daysLeft = floor( ( $generalEndDate - $currentTime ) / 60 / 60 / 24 );
-
-            if( $daysLeft < 1 ) {
-                return 'Expires tomorrow';
-            }
-
-            return 'Expires in' . $daysLeft . ' day' . ( $daysLeft == 1 ? '' : 's' );
-            
+        if( $generalEndDate > $sevenDaysFromNow ) {
+            return '';
         }
 
-        return null;
+        if( $generalEndDate <= $sevenDaysFromNow && $generalEndDate > $twoDaysFromNow ) {
+
+            $daysLeft = floor( ( $generalEndDate - $currentTime ) / 60 / 60 / 24 );
+
+            return 'Expires in ' . $daysLeft . ' day' . ( $daysLeft == 1 ? '' : 's' );
+        }
+
+        if( $generalEndDate <= $twoDaysFromNow && $generalEndDate > $twoHoursFromNow ) {
+
+            $currentTimeObj    = \DateTime::createFromFormat( 'U', $currentTime );
+            $generalEndDateObj = \DateTime::createFromFormat( 'U', $generalEndDate );
+            $diff              = $currentTimeObj->diff( $generalEndDateObj );
+            $hoursLeft         = $diff->format( '%h' );
+
+            if( intval( $hoursLeft ) <= 2 ) {
+                return 'Expiring Now';
+            }
+
+            return 'Expires in ' . $hoursLeft . ' hour' . ( $hoursLeft == 1 ? '' : 's' );
+        }
+
+        if( $generalEndDate <= $twoHoursFromNow && $generalEndDate >= $currentTime ) {
+            return 'Expiring Now';
+        }
+
+        return '';
     }
 
     private function determinePassportStatus( $allMembersStartDate, $allMembersEndDate, $publicStartDate, $publicEndDate )

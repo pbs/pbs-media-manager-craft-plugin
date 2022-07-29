@@ -90,6 +90,7 @@ class ShowEntriesSync extends BaseJob
                 case 'show_images':
 
                     $imagesHandle = SynchronizeHelper::getShowImagesField();
+                    $fieldRule    = SynchronizeHelper::getApiFieldRule( $apiField, 'showApiColumnFields' );
 
                     if( isset( $showAttributes->images ) && is_array( $showAttributes->images ) ) {
                         
@@ -97,7 +98,23 @@ class ShowEntriesSync extends BaseJob
 
                         foreach( $showAttributes->images as $image ) {
 
-                            $asset = $this->createOrUpdateImage( $showAttributes->title, $image );
+                            if( $fieldRule ) {
+
+                                preg_match( '/'. $fieldRule .'/', $image->profile, $matches );
+
+                                if( count( $matches ) ) {
+
+                                    $asset = $this->createOrUpdateImage( $showAttributes->title, $image,  $image->profile );
+
+                                    if( $asset && isset( $asset->id ) ) {
+                                        $assets[] = $asset->id;
+                                    }
+                                }
+
+                                continue;
+                            }
+
+                            $asset = $this->createOrUpdateImage( $showAttributes->title, $image, $image->profile );
 
                             if( $asset && isset( $asset->id ) ) {
                                 $assets[] = $asset->id;
@@ -109,6 +126,11 @@ class ShowEntriesSync extends BaseJob
                         }
                     }
 
+                break;
+                case 'show_address':
+                    if( isset( $showAttributes->slug ) ) {
+                        $defaultFields[ SynchronizeHelper::getApiField( $apiField, 'showApiColumnFields' ) ] = 'https://pbs.org/show/' . $showAttributes->slug;
+                    }
                 break;
                 case 'show_last_synced':
                     $defaultFields[ SynchronizeHelper::getShowLastSyncedField() ] = new \DateTime( 'now' );
@@ -127,6 +149,47 @@ class ShowEntriesSync extends BaseJob
                     if( !$existingEntry ) {
                         $defaultFields[ SynchronizeHelper::getApiField( $apiField, 'showApiColumnFields' ) ] = $showAttributes->description_short;
                     }
+                break;
+                case 'premiered_on':
+                    if( $showAttributes->premiered_on != null) {
+                        $defaultFields[ SynchronizeHelper::getApiField( $apiField, 'showApiColumnFields' ) ] = new \DateTime( $showAttributes->premiered_on );
+                    }
+                break;
+                case 'episodes_count':
+                    $defaultFields[ SynchronizeHelper::getApiField( $apiField, 'showApiColumnFields' ) ] = $showAttributes->episodes_count;
+                break;
+
+                case 'featured_preview':
+
+                    $mediaManagerEntries = [];
+
+                    $mediaManagerEntry = Entry::find()->section('media')->mediaManagerId($showAttributes->featured_preview)->one();
+
+                    if( $mediaManagerEntry ){
+                        $mediaManagerEntries[] = $mediaManagerEntry->id;
+                        $defaultFields[ SynchronizeHelper::getApiField( $apiField, 'showApiColumnFields' ) ] = $mediaManagerEntries;
+                    }
+
+                break;
+
+                case 'links':
+
+                    if( isset( $showAttributes->links ) && is_array( $showAttributes->links ) ) {
+
+                        $createTable = [];
+                        $count = 0;
+
+                        foreach( $showAttributes->links as $link ) {
+                            $createTable[$count]['linkValue'] = $link->value;
+                            $createTable[$count]['linkProfile'] = $link->profile;
+                            $createTable[$count]['linkUpdatedAt'] = new \DateTime( $link->updated_at );
+                            $count++;
+                        }
+                    
+                        $defaultFields[ SynchronizeHelper::getApiField( $apiField, 'showApiColumnFields' ) ] = $createTable;
+
+                    }
+
                 break;
 
                 default:
@@ -231,7 +294,7 @@ class ShowEntriesSync extends BaseJob
         return $localPath;
     }
 
-    private function createOrUpdateImage( $entryTitle, $imageInfo )
+    private function createOrUpdateImage( $entryTitle, $imageInfo, $profile )
     {
         $imageUrl  = $imageInfo->image;
         $extension = pathinfo( $imageUrl )[ 'extension' ];
@@ -240,13 +303,31 @@ class ShowEntriesSync extends BaseJob
         $asset     = Asset::findOne( [ 'filename' => $filename ] );
 
         if( $asset ) {
-            return $asset;
+
+            
+            Craft::$app->elements->deleteElement($asset);
+
+            /*
+            if( $asset->mmAssetProfile ) {
+            
+                return $asset;
+            
+            } else {
+
+                $asset->setFieldValue( 'mmAssetProfile', $profile);
+                Craft::$app->getElements()->saveElement( $asset );
+
+                return $asset;
+
+            }
+            */
+
         }
 
-        return $this->createImageAsset( $imageUrl, $filename );
+        return $this->createImageAsset( $imageUrl, $filename, $profile );
     }
 
-    private function createImageAsset( $imageUrl, $filename )
+    private function createImageAsset( $imageUrl, $filename, $profile )
     {
         $folder    = $this->getMediaFolder();
         $localPath = $this->copyImageToServer( $imageUrl );
@@ -259,6 +340,14 @@ class ShowEntriesSync extends BaseJob
         $asset->avoidFilenameConflicts = true;
 
         $asset->setScenario( Asset::SCENARIO_CREATE );
+        
+        // HINT: May no longer required - Plz double check
+        //$asset->setFieldValues( $defaultFields );
+
+        if( $profile ) {
+            $asset->setFieldValue( 'mmAssetProfile', $profile);
+        }
+
         Craft::$app->getElements()->saveElement( $asset );
 
         return $asset;

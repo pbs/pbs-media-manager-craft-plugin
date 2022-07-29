@@ -19,6 +19,7 @@ use craft\fields\Date;
 use craft\fields\Lightswitch;
 use craft\fields\PlainText;
 use craft\fields\Tags;
+use craft\fields\Url;
 use craft\redactor\Field as Redactor;
 use craft\helpers\ElementHelper;
 
@@ -182,7 +183,12 @@ class ShowApiColumnFieldsHelper
             break;
 
             case 'craft\fields\PlainText':
-                $fieldInformation[ 'type' ]       = PlainText::class;
+                $fieldInformation[ 'type' ] = PlainText::class;
+            break;
+
+            case 'craft\fields\Url':
+                $fieldInformation[ 'type' ]  = Url::class;
+                $fieldInformation[ 'types' ] = [ 'url' ];
             break;
 
             case 'craft\redactor\Field':

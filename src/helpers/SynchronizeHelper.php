@@ -146,6 +146,11 @@ class SynchronizeHelper
         return self::getCraftFieldHandleByApiHandle( $apiFieldHandle, $settingName );
     }
 
+    public static function getApiFieldRule( $apiFieldHandle, $settingName = 'apiColumnFields' )
+    {
+        return self::getApiRuleByApiHandle( $apiFieldHandle, $settingName );
+    }
+
     public static function getSeasonField()
     {
         return self::getCraftFieldHandleByApiHandle( 'season' );
@@ -243,5 +248,21 @@ class SynchronizeHelper
         }
 
         return $fieldHandle;
+    }
+    
+    private static function getApiRuleByApiHandle( $fieldApiHandle, $settingName = 'apiColumnFields' )
+    {
+        $fieldsToSearch = SettingsHelper::get( $settingName );
+        $fieldHandles   = array_column( $fieldsToSearch, ConstantAbstract::API_COLUMN_FIELD_API_INDEX );
+        $foundIndex     = array_search( $fieldApiHandle, $fieldHandles );
+
+        if( $foundIndex === false ) {
+            return false;
+        }
+
+        $foundField = $fieldsToSearch[ $foundIndex ];
+        $fieldRule  = ( isset( $foundField[ ConstantAbstract::API_COLUMN_FIELD_RULE_INDEX ] ) ) ? $foundField[ ConstantAbstract::API_COLUMN_FIELD_RULE_INDEX ] : false;
+
+        return $fieldRule;
     }
 }
