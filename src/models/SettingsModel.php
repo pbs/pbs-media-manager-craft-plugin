@@ -30,9 +30,11 @@ class SettingsModel extends Model
     public $mediaFieldGroup;
     public $showSection;
 
-    public $apiBaseUrl          = ConstantAbstract::API_BASE_URL;
-    public $apiAuthUsername     = ConstantAbstract::API_AUTH_USERNAME;
-    public $apiAuthPassword     = ConstantAbstract::API_AUTH_PASSWORD;
+    public $apiCraftUser        = '';
+    public $apiBaseUrl          = '';
+    public $apiAuthUsername     = '';
+    public $apiAuthPassword     = '';
+
     public $apiColumnFields     = ConstantAbstract::API_COLUMN_FIELDS;
     public $showApiColumnFields = ConstantAbstract::SHOW_API_COLUMN_FIELDS;
 
@@ -52,6 +54,10 @@ class SettingsModel extends Model
         return [
             [
                 ConstantAbstract::REQUIRED_SETTINGS, 
+                'required' 
+            ],
+            [
+                [ 'apiCraftUser' ], 
                 'required' 
             ],
             [

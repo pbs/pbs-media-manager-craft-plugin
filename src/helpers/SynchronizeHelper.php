@@ -70,7 +70,7 @@ class SynchronizeHelper
 
     public static function getAuthorId()
     {
-        $user = Craft::$app->users->getUserByUsernameOrEmail( ConstantAbstract::API_USER_USERNAME );
+        $user = Craft::$app->users->getUserByUsernameOrEmail( SettingsHelper::get( 'apiCraftUser' ) );
 
         if( !$user ) {
             return false;
@@ -81,7 +81,7 @@ class SynchronizeHelper
 
     public static function getAuthorUsername()
     {
-        return ConstantAbstract::API_USER_USERNAME;
+        return SettingsHelper::get( 'apiCraftUser' );
     }
 
     public static function getAssetFolderId()
