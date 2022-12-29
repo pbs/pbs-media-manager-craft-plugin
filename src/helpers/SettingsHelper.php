@@ -11,6 +11,7 @@
 namespace papertiger\mediamanager\helpers;
 
 use Craft;
+use craft\elements\User;
 use yii\base\Application;
 
 use papertiger\mediamanager\MediaManager;
@@ -44,6 +45,7 @@ class SettingsHelper
         return [
             'plugin'        => MediaManager::$plugin,
             'settings'      => self::settings(),
+            'users'         => User::find()->all(),
             'isCraft35'     => $isCraft35
         ];
     }

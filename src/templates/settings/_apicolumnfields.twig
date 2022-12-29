@@ -12,7 +12,22 @@
 
 {% endfor %}
 
+{% set allusers   = [ { label: '— Select Craft User —', value: '' } ] %}
+{% for user in users %}
+    {% set allusers = allusers | merge([{ label: user.username, value: user.username }]) %}
+{% endfor %}
+
 <div id="tab-api-column-fields" class="hidden">
+    {{ forms.selectField({
+        required: true,
+        name: 'apiCraftUser',
+        label: 'Craft User for API',
+        instructions: 'This Craft user will be used when the API populating entries in Craft.',
+        value: settings.apiCraftUser,
+        options: allusers,
+        errors: settings.getErrors( 'apiCraftUser' )
+    }) }}
+    
     {{ forms.textField({
         required: true,
         name: 'apiBaseUrl',

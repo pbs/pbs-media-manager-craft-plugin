@@ -19,15 +19,6 @@ abstract class ConstantAbstract
     const DEPENDENCY_PLUGIN_CRAFT_REDACTOR_PACKAGE = 'craftcms/redactor';
     const DEPENDENCY_PLUGIN_CRAFT_REDACTOR_VERSION = '>=2.3.0';
     
-    const API_USER_USERNAME  = 'user';
-    const API_USER_PASSWORD  = 'password!!';
-    const API_USER_FIRSTNAME = 'user';
-    const API_USER_LASTNAME  = 'API';
-    const API_USER_EMAIL     = 'info@papertiger.com';
-
-    const API_BASE_URL       = 'https://media.services.pbs.org/api/v1/';
-    const API_AUTH_USERNAME  = 'user';
-    const API_AUTH_PASSWORD  = 'password';
     const API_COLUMN_FIELDS  = [
         // Special Fields
         [ 'thumbnail', '', 'Thumbnail', 'thumbnail', 'craft\fields\Assets' ],
