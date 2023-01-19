@@ -13,9 +13,9 @@
   ],
   "support": {
     "email": "info@papertiger.com",
-    "issues": "https://projects.pbs.org/bitbucket/projects/MOON/repos/pbs-media-manager-craft-plugin/issues",
-    "source": "https://projects.pbs.org/bitbucket/projects/MOON/repos/pbs-media-manager-craft-plugin/browse",
-    "docs": "https://projects.pbs.org/bitbucket/projects/MOON/repos/pbs-media-manager-craft-plugin/browse/README.md"
+    "issues": "https://github.com/pbs/pbs-media-manager-craft-plugin/issues",
+    "source": "https://github.com/pbs/pbs-media-manager-craft-plugin",
+    "docs": "https://github.com/pbs/pbs-media-manager-craft-plugin/blob/main/README.md"
   },
   "require": {
     "craftcms/cms": ">=3.1.0",
@@ -30,7 +30,7 @@
   "extra": {
     "handle": "mediamanager",
     "name": "Media Manager",
-    "documentationUrl": "https://projects.pbs.org/bitbucket/projects/MOON/repos/pbs-media-manager-craft-plugin/browse/README.md",
+    "documentationUrl": "https://github.com/pbs/pbs-media-manager-craft-plugin/blob/main/README.md",
     "class": "papertiger\\mediamanager\\MediaManager"
   }
 }
