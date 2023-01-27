@@ -24,14 +24,26 @@ class BasicAuthValidator extends Validator
     public function validateAttribute( $model, $attribute )
     {
         $apiBaseUrl      = $model->apiBaseUrl; 
-        $apiAuthUsername = App::parseEnv( '$PBS_API_BASIC_AUTH_USERNAME' );
-        $apiAuthPassword = App::parseEnv( '$PBS_API_BASIC_AUTH_PASSWORD' );
+        $pbsApiUsername  = '';
+        $pbsApiPassword  = '';
+
+        if( method_exists( 'Craft', 'parseEnv' ) ) {
+
+            $pbsApiUsername = Craft::parseEnv( '$PBS_API_BASIC_AUTH_USERNAME' );
+            $pbsApiPassword = Craft::parseEnv( '$PBS_API_BASIC_AUTH_PASSWORD' );
+        }
+
+        if( method_exists( 'App', 'parseEnv' ) ) {
+
+            $pbsApiUsername = App::parseEnv( '$PBS_API_BASIC_AUTH_USERNAME' );
+            $pbsApiPassword = App::parseEnv( '$PBS_API_BASIC_AUTH_PASSWORD' );
+        }
 
         try {
 
             $client   = new Client();
             $response = $client->request( 'HEAD', $apiBaseUrl, [
-                'auth' => [ $apiAuthUsername, $apiAuthPassword ]
+                'auth' => [ $pbsApiUsername, $pbsApiPassword ]
             ]);
 
         } catch( ClientException $e ) {
