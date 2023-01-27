@@ -346,7 +346,10 @@ class ShowEntriesSync extends BaseJob
         //$asset->setFieldValues( $defaultFields );
 
         if( $profile ) {
-            $asset->setFieldValue( 'mmAssetProfile', $profile);
+            
+            if( Craft::$app->getFields()->getFieldByHandle( 'mmAssetProfile' ) ) {
+                $asset->setFieldValue( 'mmAssetProfile', $profile);
+            }
         }
 
         Craft::$app->getElements()->saveElement( $asset );
