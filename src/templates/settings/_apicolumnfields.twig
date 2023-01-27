@@ -37,26 +37,6 @@
         errors: settings.getErrors( 'apiBaseUrl' )
     }) }}
 
-    <div class="flex">
-        {{ forms.textField({
-            required: true,
-            name: 'apiAuthUsername',
-            label: 'Basic Auth',
-            instructions: 'Username',
-            fieldClass: 'flex-grow',
-            value: settings.apiAuthUsername,
-            errors: settings.getErrors( 'apiAuthUsername' )
-        }) }}
-        {{ forms.textField({
-            name: 'apiAuthPassword',
-            label: '&nbsp;',
-            instructions: 'Password',
-            fieldClass: 'flex-grow',
-            value: settings.apiAuthPassword,
-            errors: settings.getErrors( 'apiAuthPassword' )
-        }) }}
-    </div>
-
     <hr/>
 
     {{ forms.editableTableField({

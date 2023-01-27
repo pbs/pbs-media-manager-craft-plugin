@@ -11,6 +11,7 @@
 namespace papertiger\mediamanager\validators;
 
 use Craft;
+use craft\helpers\App;
 use yii\validators\Validator;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
@@ -23,8 +24,8 @@ class BasicAuthValidator extends Validator
     public function validateAttribute( $model, $attribute )
     {
         $apiBaseUrl      = $model->apiBaseUrl; 
-        $apiAuthUsername = $model->apiAuthUsername;
-        $apiAuthPassword = $model->apiAuthPassword;
+        $apiAuthUsername = App::parseEnv( '$PBS_API_BASIC_AUTH_USERNAME' );
+        $apiAuthPassword = App::parseEnv( '$PBS_API_BASIC_AUTH_PASSWORD' );
 
         try {
 
@@ -34,7 +35,7 @@ class BasicAuthValidator extends Validator
             ]);
 
         } catch( ClientException $e ) {
-            $this->addError( $model, $attribute, 'Failed to authenticate PBS API. Make sure base url, username and password are correct.' );
+            $this->addError( $model, $attribute, 'Failed to authenticate PBS API. Make sure base url is correct and you have set a correct PBS_API_BASIC_AUTH_USERNAME and PBS_API_BASIC_AUTH_PASSWORD variables in .env file.' );
         }
 
         return;

@@ -13,6 +13,7 @@ namespace papertiger\mediamanager\helpers;
 use Craft;
 use Exception;
 use craft\elements\User;
+use craft\helpers\App;
 
 use papertiger\mediamanager\base\ConstantAbstract;
 use papertiger\mediamanager\helpers\SettingsHelper;
@@ -212,8 +213,8 @@ class SynchronizeHelper
 
         $response = $client->get( $changelogUrl, [
             'auth' => [
-                SettingsHelper::get( 'apiAuthUsername' ),
-                SettingsHelper::get( 'apiAuthPassword' ),
+                App::parseEnv( '$PBS_API_BASIC_AUTH_USERNAME' ),
+                App::parseEnv( '$PBS_API_BASIC_AUTH_PASSWORD' ),
             ]
         ]);
 
