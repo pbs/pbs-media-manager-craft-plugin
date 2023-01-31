@@ -18,7 +18,7 @@ abstract class ConstantAbstract
     const DEPENDENCY_PLUGIN_CRAFT_REDACTOR_HANDLE  = 'redactor';
     const DEPENDENCY_PLUGIN_CRAFT_REDACTOR_PACKAGE = 'craftcms/redactor';
     const DEPENDENCY_PLUGIN_CRAFT_REDACTOR_VERSION = '>=2.3.0';
-
+    
     const API_COLUMN_FIELDS  = [
         // Special Fields
         [ 'thumbnail', '', 'Thumbnail', 'thumbnail', 'craft\fields\Assets' ],
@@ -98,7 +98,7 @@ abstract class ConstantAbstract
 
     const REQUIRED_SETTINGS = [ 
         'mediaSection', 'mediaAssetVolume', 'mediaFieldGroup',
-        'apiBaseUrl', 'apiAuthUsername', 'apiAuthPassword', 'apiColumnFields', 
+        'apiBaseUrl', 'apiColumnFields', 
         'fieldLayout', 'syncSchedule'
     ];
 

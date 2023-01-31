@@ -11,6 +11,7 @@
 namespace papertiger\mediamanager\services;
 
 use Craft;
+use craft\helpers\App;
 use craft\base\Component;
 use craft\base\Element;
 use craft\helpers\UrlHelper;
@@ -45,11 +46,26 @@ class Api extends Component
         self::$sectionMediaHandle     = SettingsHelper::get( 'mediaSection' );
         self::$sectionUsedMediaHandle = SettingsHelper::get( 'mediaUsedBySection' );
 
+        $pbsApiUsername = '';
+        $pbsApiPassword = '';
+
+        if( method_exists( 'Craft', 'parseEnv' ) ) {
+
+            $pbsApiUsername = Craft::parseEnv( '$PBS_API_BASIC_AUTH_USERNAME' );
+            $pbsApiPassword = Craft::parseEnv( '$PBS_API_BASIC_AUTH_PASSWORD' );
+        }
+
+        if( method_exists( 'App', 'parseEnv' ) ) {
+
+            $pbsApiUsername = App::parseEnv( '$PBS_API_BASIC_AUTH_USERNAME' );
+            $pbsApiPassword = App::parseEnv( '$PBS_API_BASIC_AUTH_PASSWORD' );
+        }
+
         self::$apiBaseUrl = SettingsHelper::get( 'apiBaseUrl' );
         self::$apiAuth    = [
             'auth' => [
-                SettingsHelper::get( 'apiAuthUsername' ),
-                SettingsHelper::get( 'apiAuthPassword' ),
+                $pbsApiUsername,
+                $pbsApiPassword,
             ]
         ];
     }
