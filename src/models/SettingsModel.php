@@ -32,8 +32,6 @@ class SettingsModel extends Model
 
     public $apiCraftUser        = '';
     public $apiBaseUrl          = '';
-    public $apiAuthUsername     = '';
-    public $apiAuthPassword     = '';
 
     public $apiColumnFields     = ConstantAbstract::API_COLUMN_FIELDS;
     public $showApiColumnFields = ConstantAbstract::SHOW_API_COLUMN_FIELDS;
@@ -61,7 +59,7 @@ class SettingsModel extends Model
                 'required' 
             ],
             [
-                [ 'apiBaseUrl', 'apiAuthUsername', 'apiAuthPassword' ],
+                [ 'apiBaseUrl' ],
                 BasicAuthValidator::class
             ],
             [

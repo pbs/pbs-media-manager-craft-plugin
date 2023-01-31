@@ -98,7 +98,7 @@ abstract class ConstantAbstract
 
     const REQUIRED_SETTINGS = [ 
         'mediaSection', 'mediaAssetVolume', 'mediaFieldGroup',
-        'apiBaseUrl', 'apiAuthUsername', 'apiAuthPassword', 'apiColumnFields', 
+        'apiBaseUrl', 'apiColumnFields', 
         'fieldLayout', 'syncSchedule'
     ];
 
