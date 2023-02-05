@@ -157,7 +157,10 @@ class ShowEntriesSync extends BaseJob
                     }
                 break;
                 case 'episodes_count':
-                    $defaultFields[ SynchronizeHelper::getApiField( $apiField, 'showApiColumnFields' ) ] = $showAttributes->episodes_count;
+                    // Retain Episodes Count for existing entries
+                    if( !$existingEntry ) {
+                        $defaultFields[ SynchronizeHelper::getApiField( $apiField, 'showApiColumnFields' ) ] = $showAttributes->episodes_count;
+                    }
                 break;
 
                 case 'featured_preview':
