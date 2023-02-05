@@ -310,22 +310,27 @@ class MediaSync extends BaseJob
                     break;
                     case 'episode':
 
-                        $episodeId  = '';
-                        $parentTree = $assetAttributes->parent_tree;
+                        // Retain Episodes Count for existing entries
+                        if( !$existingEntry ) {
 
-                        if( $parentTree ) {
+                            $episodeId  = '';
+                            $parentTree = $assetAttributes->parent_tree;
 
-                            if( $parentTree->type == 'episode' ) {
+                            if( $parentTree ) {
 
-                                $parentAttributes = $parentTree->attributes;
+                                if( $parentTree->type == 'episode' ) {
 
-                                if( $parentAttributes ) {
-                                    $episodeId = $parentAttributes->ordinal;
+                                    $parentAttributes = $parentTree->attributes;
+
+                                    if( $parentAttributes ) {
+                                        $episodeId = $parentAttributes->ordinal;
+                                    }
                                 }
                             }
+                            
+                            $defaultFields[ SynchronizeHelper::getApiField( $apiField ) ] = $episodeId;
+
                         }
-                        
-                        $defaultFields[ SynchronizeHelper::getApiField( $apiField ) ] = $episodeId;
 
                     break;
 
