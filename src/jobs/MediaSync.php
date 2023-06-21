@@ -12,6 +12,8 @@ namespace papertiger\mediamanager\jobs;
 
 use Craft;
 use craft\db\Query;
+use craft\errors\ElementNotFoundException;
+use craft\helpers\Queue;
 use craft\queue\BaseJob;
 use craft\elements\Entry;
 use craft\elements\Asset;
@@ -20,9 +22,11 @@ use craft\helpers\FileHelper;
 use craft\helpers\ElementHelper;
 use craft\helpers\Assets as AssetHelper;
 
+use DateTime;
 use papertiger\mediamanager\MediaManager;
 use papertiger\mediamanager\helpers\SettingsHelper;
 use papertiger\mediamanager\helpers\SynchronizeHelper;
+use yii\base\Exception;
 
 class MediaSync extends BaseJob
 {
@@ -53,6 +57,10 @@ class MediaSync extends BaseJob
     public $singleAssetKey;
 
     public $forceRegenerateThumbnail;
+
+    public $siteTags = [];
+    public $filmTags = [];
+    public $topicTags = [];
 
 
     // Private Properties
@@ -186,6 +194,7 @@ class MediaSync extends BaseJob
                             }
                         }
 
+                        $this->siteTags = $siteTags;
                         $defaultFields[ $siteTagFieldHandle ] = $siteTags;
 
                     break;
@@ -224,6 +233,7 @@ class MediaSync extends BaseJob
                             }
                         }
 
+                        $this->filmTags = $filmTags;
                         $defaultFields[ $filmTagFieldHandle ] = $filmTags;
 
                     break;
@@ -252,6 +262,7 @@ class MediaSync extends BaseJob
                             }
                         }
 
+                        $this->topicTags = $topicTags;
                         $defaultFields[ $topicTagFieldHandle ] = $topicTags;
 
                     break;
@@ -423,7 +434,10 @@ class MediaSync extends BaseJob
         if( $forceRegenerateThumbnail == 'true' ) {
 
             $thumbnail = $this->createOrUpdateThumbnail( $entry->title, $assetAttributes->images[ 0 ] );
-            $defaultFields[ SynchronizeHelper::getThumbnailField() ] = [ $thumbnail->id ];
+
+            if($thumbnail) {
+                $defaultFields[ SynchronizeHelper::getThumbnailField() ] = [ $thumbnail->id ];
+            }
 
             return $defaultFields;
         }
@@ -432,11 +446,13 @@ class MediaSync extends BaseJob
         if( !$existingEntry ) {
 
             $thumbnail = $this->createOrUpdateThumbnail( $entry->title, $assetAttributes->images[ 0 ] );
-            $defaultFields[ SynchronizeHelper::getThumbnailField() ] = [ $thumbnail->id ];
+            if($thumbnail) {
+                $defaultFields[ SynchronizeHelper::getThumbnailField() ] = [ $thumbnail->id ];
+            }
 
         } else {
 
-            // Regenerate if entry already exist and thumbnail is empty 
+            // Regenerate if entry already exist and thumbnail is empty
             // or inaccessible due to Enabled Sites incomplete against Supported Sites which causing thumbnail empty
             if( $thumbnail = $this->thumbnailNotAccessibleAcrossSites( $entry ) ) {
                 $defaultFields[ SynchronizeHelper::getThumbnailField() ] = [ $thumbnail->id ];
@@ -445,7 +461,7 @@ class MediaSync extends BaseJob
 
         return $defaultFields;
     }
-    
+
     private function findExistingMediaEntry( $mediaManagerId )
     {
         // Find existing media
@@ -453,9 +469,10 @@ class MediaSync extends BaseJob
                     ->{ SynchronizeHelper::getMediaManagerIdField() }( $mediaManagerId )
                     ->sectionId( $this->sectionId )
                     ->status( null )
+                    ->siteId($this->siteId)
                     ->one();
 
-        return ( $entry ) ? $entry : false;
+        return $entry ?? false;
     }
 
     private function chooseOrCreateMediaEntry( $title, $entry )
@@ -466,7 +483,7 @@ class MediaSync extends BaseJob
             $apiUserID = $this->authorId;
             if( $this->authorUsername ) {
                 $user = Craft::$app->users->getUserByUsernameOrEmail( $this->authorUsername );
-                
+
                 if( $user ) {
                     $apiUserID = $user->id;
                 }
@@ -532,9 +549,18 @@ class MediaSync extends BaseJob
         $asset->avoidFilenameConflicts = true;
 
         $asset->setScenario( Asset::SCENARIO_CREATE );
-        Craft::$app->getElements()->saveElement( $asset );
 
-        return $asset;
+        try {
+            Craft::$app->getElements()->saveElement( $asset );
+            return $asset;
+        } catch (ElementNotFoundException|Exception $e) {
+            Craft::error($e->getMessage(), __METHOD__);
+            return null;
+        } catch (\Throwable $e) {
+            Craft::error($e->getMessage(), __METHOD__);
+            return null;
+        }
+
     }
 
     private function cloneExistingThumbnail( $entry )
