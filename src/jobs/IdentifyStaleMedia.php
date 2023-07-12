@@ -61,13 +61,13 @@ class IdentifyStaleMedia extends BaseJob
         }
 
 
-        $relatedMediaObjects = Entry::find()->sectionId($this->sectionId)->lastSynced("< {$this->date}")->relatedTo(['and', $this->tags]);
+        $relatedMediaObjects = Entry::find()->sectionId($this->sectionId)->lastSynced("< {$this->date}")->relatedTo(['and', $this->tags])->markedForDeletion(0)->siteId($this->siteId)->ids();
 
-        foreach(Db::each($relatedMediaObjects) as $media) {
-            Craft::warning("Marking entry ID {$media->id} for deletion.", __METHOD__);
-            $media->setFieldValue('markedForDeletion', 1);
-            $media->setFieldValue('lastSynced', (new DateTime()));
-            Craft::$app->getElements()->saveElement($media);
+        foreach($relatedMediaObjects as $media) {
+					if (!$this->_queueJobExists($media)) {
+						$queue = Craft::$app->getQueue();
+						$queue->push(new MarkStaleMedia(['entryId' => $media]));
+					}
         }
     }
 
@@ -78,7 +78,17 @@ class IdentifyStaleMedia extends BaseJob
     {
         return Craft::t( 'mediamanager', "Marking entries for deletion." );
     }
+		
 
     // Private Methods
     // =========================================================================
+		private function _queueJobExists(int $entryId): bool
+		{
+			// Preflight check to ensure regular queue in place
+			if(!Craft::$app->queue->hasProperty('jobInfo')){
+				return false;
+			}
+			
+			return in_array("Marking entry {$entryId} for deletion.", array_column(Craft::$app->queue->jobInfo, 'description'), true);
+		}
 }
