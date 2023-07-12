@@ -1,7 +1,7 @@
 {
   "name": "moon/pbs-media-manager-craft-plugin",
   "description": "Media Manager 3 for PBS API",
-  "version": "3.0.1",
+  "version": "3.2.0",
   "type": "craft-plugin",
   "keywords": ["craftcms", "pbs", "media-manager"],
   "license": "MIT",
@@ -20,7 +20,7 @@
   "require": {
     "craftcms/cms": ">=3.1.0",
     "craftcms/redactor": ">=2.3.0",
-    "peppeocchi/php-cron-scheduler": "3.*"
+    "peppeocchi/php-cron-scheduler": "4.*"
   },
   "autoload": {
     "psr-4": {

@@ -1,8 +1,8 @@
-<div id="customfieldlayout" class="customfieldlayout fieldlayoutform">
+<div id="customshowfieldlayout" class="customshowfieldlayout showfieldlayoutform">
 
     <div class="fld-tabs">
 
-        {% for tabName, tabFields in settings.fieldLayout %}
+        {% for tabName, tabFields in settings.showFieldLayout %}
             <div class="fld-tab">
                 <div class="tabs">
                     <div class="tab sel draggable">
@@ -15,7 +15,7 @@
                         <div class="fld-field" data-id="{{ field }}">
                             <a class="settings icon" title="{{ 'Edit'|t('app') }}"></a>
                             <span title="{{ field }}">{{ field }}</span>
-                            <input type="hidden" class="id-input" name="fieldLayout[{{tabName|e('url')}}][]" value="{{ field }}">
+                            <input type="hidden" class="id-input" name="showFieldLayout[{{tabName|e('url')}}][]" value="{{ field }}">
                         </div>
                     {% endfor %}
                 </div>
@@ -32,7 +32,7 @@
         {% for group in groups %}
             {% set totalUnselected = 0 %}
             {% for field in group.fields %}
-                {% if field.handle not in settingFields %}
+                {% if field.handle not in showSettingFields %}
                     {% set totalUnselected = totalUnselected + 1 %}
                 {% endif %}
             {% endfor %}
@@ -43,7 +43,7 @@
                 </div>
                 <div class="fld-tabcontent">
                     {% for field in group.fields %}
-                        {% set selected = field.handle in settingFields %}
+                        {% set selected = field.handle in showSettingFields %}
                         <div class="fld-field unused{% if selected %} hidden{% endif %}" data-id="{{ field.handle }}">
                             <span title="{{ field.handle }}">{{ field.handle }}</span>
                         </div>

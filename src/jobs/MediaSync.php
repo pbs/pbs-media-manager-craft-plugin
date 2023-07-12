@@ -12,6 +12,8 @@ namespace papertiger\mediamanager\jobs;
 
 use Craft;
 use craft\db\Query;
+use craft\errors\ElementNotFoundException;
+use craft\helpers\Queue;
 use craft\queue\BaseJob;
 use craft\elements\Entry;
 use craft\elements\Asset;
@@ -20,9 +22,11 @@ use craft\helpers\FileHelper;
 use craft\helpers\ElementHelper;
 use craft\helpers\Assets as AssetHelper;
 
+use DateTime;
 use papertiger\mediamanager\MediaManager;
 use papertiger\mediamanager\helpers\SettingsHelper;
 use papertiger\mediamanager\helpers\SynchronizeHelper;
+use yii\base\Exception;
 
 class MediaSync extends BaseJob
 {
@@ -54,6 +58,10 @@ class MediaSync extends BaseJob
 
     public $forceRegenerateThumbnail;
 
+    public $siteTags = [];
+    public $filmTags = [];
+    public $topicTags = [];
+
 
     // Private Properties
     // =========================================================================
@@ -74,8 +82,10 @@ class MediaSync extends BaseJob
         $this->mediaFolderId  = SynchronizeHelper::getAssetFolderId(); // MEDIA_FOLDER_ID
         $this->logProcess     = 1; // LOG_PROCESS
         $this->logFile        = '@storage/logs/sync.log'; // LOG_FILE
-
-
+				
+	      // Convert Site ID from string (json) to array
+	      $this->_sanitizeSiteId();
+				
         $url         = $this->generateAPIUrl( $this->assetType, $this->apiKey, $this->singleAsset, $this->singleAssetKey );
         $mediaAssets = $this->fetchMediaAssets( $url );
 
@@ -96,7 +106,9 @@ class MediaSync extends BaseJob
             $expirationStatus    = $this->determineExpirationStatus( $availabilities->public->end );
             $displayPassportIcon = $this->determinePassportStatus(
                 $availabilities->all_members->start,
-                $availabilities->all_members->end
+                $availabilities->all_members->end,
+                $availabilities->public->start,
+                $availabilities->public->end
             );
 
             // Set default field Values
@@ -111,6 +123,49 @@ class MediaSync extends BaseJob
 
                 switch( $apiField ) {
                     case 'thumbnail':
+                    break;
+                    case 'images':
+                        $imagesHandle = SynchronizeHelper::getApiField( $apiField );
+                        $fieldRule    = SynchronizeHelper::getApiFieldRule( $apiField );
+
+                        if( isset( $assetAttributes->images ) && is_array( $assetAttributes->images ) ) {
+                            
+                            $assets = [];
+
+                            foreach( $assetAttributes->images as $image ) {
+
+                                if( $fieldRule ) {
+
+                                    preg_match( '/'. $fieldRule .'/', $image->profile, $matches );
+
+                                    if( count( $matches ) ) {
+
+                                        $asset = $this->createOrUpdateThumbnail( $entry->title, $image );
+
+                                        if( $asset && isset( $asset->id ) ) {
+                                            $assets[] = $asset->id;
+                                        }
+                                    }
+
+                                    continue;
+                                }
+
+                                $asset = $this->createOrUpdateThumbnail( $entry->title, $image );
+
+                                if( $asset && isset( $asset->id ) ) {
+                                    $assets[] = $asset->id;
+                                }
+                            }
+
+                            if( $assets ) {
+                                $defaultFields[ $imagesHandle ] = $assets;
+                            }
+                        }
+                    break;
+                    case 'video_address':
+                        if( isset( $assetAttributes->slug ) ) {
+                            $defaultFields[ SynchronizeHelper::getApiField( $apiField ) ] = 'https://pbs.org/video/' . $assetAttributes->slug;
+                        }
                     break;
                     case 'display_passport_icon':
                         $defaultFields[ SynchronizeHelper::getDisplayPassportIconField() ] = $displayPassportIcon;
@@ -127,12 +182,8 @@ class MediaSync extends BaseJob
                         // Generate Site Tags
                         $siteTags = [];
                         
-                        if( !is_array( $this->siteId ) ) {
-                            $this->siteId = json_decode( $this->siteId );
-                        }
-
                         foreach( $this->siteId as $siteId ) {
-
+	                          Craft::warning($siteId, __METHOD__);
                             $site = Craft::$app->sites->getSiteById( $siteId );
                             $tag = $this->findOrCreateTag( $site->name, $siteTagGroupId );
                             
@@ -141,6 +192,7 @@ class MediaSync extends BaseJob
                             }
                         }
 
+                        $this->siteTags = $siteTags;
                         $defaultFields[ $siteTagFieldHandle ] = $siteTags;
 
                     break;
@@ -179,6 +231,7 @@ class MediaSync extends BaseJob
                             }
                         }
 
+                        $this->filmTags = $filmTags;
                         $defaultFields[ $filmTagFieldHandle ] = $filmTags;
 
                     break;
@@ -207,6 +260,7 @@ class MediaSync extends BaseJob
                             }
                         }
 
+                        $this->topicTags = $topicTags;
                         $defaultFields[ $topicTagFieldHandle ] = $topicTags;
 
                     break;
@@ -248,6 +302,14 @@ class MediaSync extends BaseJob
                                         $seasonId = $season_attributes->ordinal;
                                     }
                                 }
+
+                            } elseif( $parentTree->type == 'season' ) {
+                                
+                                $parentAttributes = $parentTree->attributes;
+
+                                if( isset( $parentAttributes->ordinal ) ) {
+                                    $seasonId = $parentAttributes->ordinal;
+                                }
                             }
                         }
                         
@@ -270,7 +332,7 @@ class MediaSync extends BaseJob
                                 }
                             }
                         }
-                        
+
                         $defaultFields[ SynchronizeHelper::getApiField( $apiField ) ] = $episodeId;
 
                     break;
@@ -284,20 +346,50 @@ class MediaSync extends BaseJob
             // Process additional fields
             $defaultFields = $this->processAdditionalFields( $defaultFields, $assetAttributes, $existingEntry, $entry, $this->forceRegenerateThumbnail );
 
+            if (SynchronizeHelper::getTagGroupIdByCraftFieldHandle( 'assetType')) {
+                $assetTypeTag = $this->findOrCreateTag($this->assetType, SynchronizeHelper::getTagGroupIdByCraftFieldHandle( 'assetType'));
+                $entry->setFieldValue('assetType', [$assetTypeTag->id]);
+            }
+
             // Set field values and properties
             $entry->setFieldValues( $defaultFields );
 
             if( $availabilities->all_members->end ) {
-
                 $tempExpiryDate    = strtotime( $availabilities->all_members->end );
                 $entry->expiryDate = new \DateTime( date( 'Y-m-d H:i:s', $tempExpiryDate ) );
             }
 
             $entry->enabled = $this->isEntryEnabled( $availabilities->all_members->end );
 
+            // If the entry is being updated via Sync, we know that it is still enabled and thus should not be deleted.
+            $entry->setFieldValue('markedForDeletion', false);
+
             Craft::$app->getElements()->saveElement( $entry );
             $this->setProgress( $queue, $count++ / $totalAssets );
         }
+
+
+        $today = (new DateTime())->format('Y-m-d');
+        $mergedTags = implode(', ', array_merge($this->filmTags, $this->siteTags, $this->topicTags));
+
+//        Craft::dd([
+//            'thisFilmTags' => $this->filmTags,
+//            'filmTags' => $filmTags ?? null,
+//            'thisSiteTags' => $this->siteTags,
+//            'siteTags' => $siteTags ?? null,
+//            'thisTopicTags' => $this->topicTags,
+//            'topicTags' => $topicTags ?? null,
+//            'mergedTags' => $mergedTags,
+//            'siteId' => $this->siteId,
+//            'sectionId' => $this->sectionId,
+//        ]);
+
+        Queue::push((new IdentifyStaleMedia([
+            'date' => $today,
+            'tags' => $mergedTags,
+            'sectionId' => $this->sectionId,
+            'siteId' => $this->siteId,
+        ])));
     }
 
     // Protected Methods
@@ -310,15 +402,15 @@ class MediaSync extends BaseJob
 
     // Private Methods
     // =========================================================================
-     
+
     private function log( $message )
-    {   
+    {
         if( $this->logProcess ) {
             $log = date( 'Y-m-d H:i:s' ) .' '. $message . "\n";
             FileHelper::writeToFile( Craft::getAlias( $this->logFile ), $log, [ 'append' => true ] );
         }
     }
-    
+
     private function generateAPIUrl( $assetType, $apiKey, $singleAsset, $singleAssetKey )
     {
 
@@ -370,7 +462,10 @@ class MediaSync extends BaseJob
         if( $forceRegenerateThumbnail == 'true' ) {
 
             $thumbnail = $this->createOrUpdateThumbnail( $entry->title, $assetAttributes->images[ 0 ] );
-            $defaultFields[ SynchronizeHelper::getThumbnailField() ] = [ $thumbnail->id ];
+
+            if($thumbnail) {
+                $defaultFields[ SynchronizeHelper::getThumbnailField() ] = [ $thumbnail->id ];
+            }
 
             return $defaultFields;
         }
@@ -379,11 +474,13 @@ class MediaSync extends BaseJob
         if( !$existingEntry ) {
 
             $thumbnail = $this->createOrUpdateThumbnail( $entry->title, $assetAttributes->images[ 0 ] );
-            $defaultFields[ SynchronizeHelper::getThumbnailField() ] = [ $thumbnail->id ];
+            if($thumbnail) {
+                $defaultFields[ SynchronizeHelper::getThumbnailField() ] = [ $thumbnail->id ];
+            }
 
         } else {
 
-            // Regenerate if entry already exist and thumbnail is empty 
+            // Regenerate if entry already exist and thumbnail is empty
             // or inaccessible due to Enabled Sites incomplete against Supported Sites which causing thumbnail empty
             if( $thumbnail = $this->thumbnailNotAccessibleAcrossSites( $entry ) ) {
                 $defaultFields[ SynchronizeHelper::getThumbnailField() ] = [ $thumbnail->id ];
@@ -392,17 +489,19 @@ class MediaSync extends BaseJob
 
         return $defaultFields;
     }
-    
+
     private function findExistingMediaEntry( $mediaManagerId )
     {
+	    Craft::warning($this->siteId, __METHOD__);
         // Find existing media
         $entry = Entry::find()
                     ->{ SynchronizeHelper::getMediaManagerIdField() }( $mediaManagerId )
                     ->sectionId( $this->sectionId )
                     ->status( null )
+                    ->siteId($this->siteId)
                     ->one();
 
-        return ( $entry ) ? $entry : false;
+        return $entry ?? false;
     }
 
     private function chooseOrCreateMediaEntry( $title, $entry )
@@ -413,7 +512,7 @@ class MediaSync extends BaseJob
             $apiUserID = $this->authorId;
             if( $this->authorUsername ) {
                 $user = Craft::$app->users->getUserByUsernameOrEmail( $this->authorUsername );
-                
+
                 if( $user ) {
                     $apiUserID = $user->id;
                 }
@@ -445,7 +544,7 @@ class MediaSync extends BaseJob
     }
 
     private function thumbnailNotAccessibleAcrossSites( $entry )
-    {   
+    {
         // If thumbnail empty, don't overwrite it since it might be from the admin
         if( !count( $entry->{ SynchronizeHelper::getThumbnailField() } ) ) {
             return false;
@@ -457,7 +556,7 @@ class MediaSync extends BaseJob
             return false;
         }
 
-        // This means some sites unable to access the asset 
+        // This means some sites unable to access the asset
         // which causing the thumbnail field looks like empty, regenerate then...
         if( !$this->compareEnabledSupportedSites( $asset ) ) {
             return $this->cloneExistingThumbnail( $entry );
@@ -479,9 +578,18 @@ class MediaSync extends BaseJob
         $asset->avoidFilenameConflicts = true;
 
         $asset->setScenario( Asset::SCENARIO_CREATE );
-        Craft::$app->getElements()->saveElement( $asset );
 
-        return $asset;
+        try {
+            Craft::$app->getElements()->saveElement( $asset );
+            return $asset;
+        } catch (ElementNotFoundException|Exception $e) {
+            Craft::error($e->getMessage(), __METHOD__);
+            return null;
+        } catch (\Throwable $e) {
+            Craft::error($e->getMessage(), __METHOD__);
+            return null;
+        }
+
     }
 
     private function cloneExistingThumbnail( $entry )
@@ -507,7 +615,7 @@ class MediaSync extends BaseJob
 
         if( $asset ) {
 
-            // Need to regenerate if existing asset is inaccesslbe by some sites
+            // Need to regenerate if existing asset is inaccessible by some sites
             if( $this->compareEnabledSupportedSites( $asset ) ) {
                 return $asset;
             }
@@ -519,37 +627,61 @@ class MediaSync extends BaseJob
     private function determineExpirationStatus( $date )
     {
         if( !$date ) {
-            return null;
+            return '';
         }
 
         $generalEndDate   = strtotime( $date );
         $currentTime      = strtotime( 'now' );
-        $eightDaysFromNow = strtotime( '+8 days' );
+        $sevenDaysFromNow = strtotime( '+7 days' );
+        $twoDaysFromNow   = strtotime( '+2 days' );
+        $twoHoursFromNow  = strtotime( '+2 hours' );
 
-        if( date( 'Y-m-d', $generalEndDate ) == date( 'Y-m-d', $currentTime ) ) {
-            return 'Expires today';
-        } elseif( $generalEndDate > $currentTime && $generalEndDate < $eightDaysFromNow ) {
-            
-            $daysLeft = floor( ( $generalEndDate - $currentTime ) / 60 / 60 / 24 );
-
-            if( $daysLeft < 1 ) {
-                return 'Expires tomorrow';
-            }
-
-            return 'Expires in' . $daysLeft . ' day' . ( $daysLeft == 1 ? '' : 's' );
-            
+        if( $generalEndDate > $sevenDaysFromNow ) {
+            return '';
         }
 
-        return null;
+        if( $generalEndDate <= $sevenDaysFromNow && $generalEndDate > $twoDaysFromNow ) {
+
+            $daysLeft = floor( ( $generalEndDate - $currentTime ) / 60 / 60 / 24 );
+
+            return 'Expires in ' . $daysLeft . ' day' . ( $daysLeft == 1 ? '' : 's' );
+        }
+
+        if( $generalEndDate <= $twoDaysFromNow && $generalEndDate > $twoHoursFromNow ) {
+
+            $currentTimeObj    = \DateTime::createFromFormat( 'U', $currentTime );
+            $generalEndDateObj = \DateTime::createFromFormat( 'U', $generalEndDate );
+            $diff              = $currentTimeObj->diff( $generalEndDateObj );
+            $hoursLeft         = $diff->format( '%h' );
+
+            if( intval( $hoursLeft ) <= 2 ) {
+                return 'Expiring Now';
+            }
+
+            return 'Expires in ' . $hoursLeft . ' hour' . ( $hoursLeft == 1 ? '' : 's' );
+        }
+
+        if( $generalEndDate <= $twoHoursFromNow && $generalEndDate >= $currentTime ) {
+            return 'Expiring Now';
+        }
+
+        return '';
     }
 
-    private function determinePassportStatus( $startDate, $endDate )
+    private function determinePassportStatus( $allMembersStartDate, $allMembersEndDate, $publicStartDate, $publicEndDate )
     {
-        $passportStart = strtotime( $startDate );
-        $passportEnd   = strtotime( $endDate );
-        $currentTime   = strtotime( '0 days' );
+        $publicStart     = strtotime( $publicStartDate );
+        $publicEnd       = strtotime( $publicEndDate );
+        $allMembersStart = strtotime( $allMembersStartDate );
+        $allMembersEnd   = strtotime( $allMembersEndDate );
+        $currentTime     = strtotime( '0 days' );
 
-        return $passportStart < $currentTime && $currentTime < $passportEnd;
+        // Check if currentTime inside public window
+        if( $publicStart < $currentTime && $currentTime < $publicEnd ) {
+            return false;
+        }
+
+        return $allMembersStart < $currentTime && $currentTime < $allMembersEnd;
     }
 
     private function isEntryEnabled( $endDate )
@@ -600,4 +732,11 @@ class MediaSync extends BaseJob
             return "${seconds}s";
         }
     }
+		
+		private function _sanitizeSiteId()
+		{
+			if( !is_array( $this->siteId ) ) {
+				$this->siteId = json_decode( $this->siteId );
+			}
+		}
 }

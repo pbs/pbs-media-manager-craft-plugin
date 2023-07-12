@@ -11,6 +11,7 @@
 namespace papertiger\mediamanager\helpers;
 
 use Craft;
+use craft\helpers\App;
 use Exception;
 use craft\elements\User;
 
@@ -44,10 +45,33 @@ class SynchronizeHelper
 
         return $entryTypes[ 0 ]->id;
     }
+    
+    public static function getShowSectionId()
+    {
+        $section = Craft::$app->sections->getSectionByHandle( SettingsHelper::get( 'showSection' ) );
+        
+        if( !$section ) {
+            return false;
+        }
+
+        return $section->id;
+    }
+
+    public static function getShowSectionTypeId()
+    {
+        $sectionId  = self::getShowSectionId();
+        $entryTypes = Craft::$app->sections->getEntryTypesBySectionId( $sectionId );
+
+        if( !is_array( $entryTypes ) && !$entryTypes[ 0 ] ) {
+            return false;
+        }
+
+        return $entryTypes[ 0 ]->id;
+    }
 
     public static function getAuthorId()
     {
-        $user = Craft::$app->users->getUserByUsernameOrEmail( ConstantAbstract::API_USER_USERNAME );
+        $user = Craft::$app->users->getUserByUsernameOrEmail( SettingsHelper::get( 'apiCraftUser' ) );
 
         if( !$user ) {
             return false;
@@ -58,7 +82,7 @@ class SynchronizeHelper
 
     public static function getAuthorUsername()
     {
-        return ConstantAbstract::API_USER_USERNAME;
+        return SettingsHelper::get( 'apiCraftUser' );
     }
 
     public static function getAssetFolderId()
@@ -118,9 +142,14 @@ class SynchronizeHelper
         return self::getCraftFieldHandleByApiHandle( 'expiration_status' );
     }
 
-    public static function getApiField( $apiFieldHandle )
+    public static function getApiField( $apiFieldHandle, $settingName = 'apiColumnFields' )
     {
-        return self::getCraftFieldHandleByApiHandle( $apiFieldHandle );
+        return self::getCraftFieldHandleByApiHandle( $apiFieldHandle, $settingName );
+    }
+
+    public static function getApiFieldRule( $apiFieldHandle, $settingName = 'apiColumnFields' )
+    {
+        return self::getApiRuleByApiHandle( $apiFieldHandle, $settingName );
     }
 
     public static function getSeasonField()
@@ -131,6 +160,21 @@ class SynchronizeHelper
     public static function getEpisodeField()
     {
         return self::getCraftFieldHandleByApiHandle( 'episode' );
+    }
+
+    public static function getShowLastSyncedField()
+    {
+        return self::getCraftFieldHandleByApiHandle( 'show_last_synced', 'showApiColumnFields' );
+    }
+
+    public static function getShowMediaManagerIdField()
+    {
+        return self::getCraftFieldHandleByApiHandle( 'show_media_manager_id', 'showApiColumnFields' );
+    }
+
+    public static function getShowImagesField()
+    {
+        return self::getCraftFieldHandleByApiHandle( 'show_images', 'showApiColumnFields' );
     }
 
     public static function getTagGroupIdByCraftFieldHandle( $craftFieldHandle )
@@ -172,10 +216,25 @@ class SynchronizeHelper
             $changelogUrl = $changelogUrl . '?' . http_build_query( $changelogParams );
         }
 
+        $pbsApiUsername = '';
+        $pbsApiPassword = '';
+
+        if( method_exists( 'Craft', 'parseEnv' ) ) {
+
+            $pbsApiUsername = Craft::parseEnv( '$PBS_API_BASIC_AUTH_USERNAME' );
+            $pbsApiPassword = Craft::parseEnv( '$PBS_API_BASIC_AUTH_PASSWORD' );
+        }
+
+        if( method_exists( 'App', 'parseEnv' ) ) {
+
+            $pbsApiUsername = App::parseEnv( '$PBS_API_BASIC_AUTH_USERNAME' );
+            $pbsApiPassword = App::parseEnv( '$PBS_API_BASIC_AUTH_PASSWORD' );
+        }
+
         $response = $client->get( $changelogUrl, [
             'auth' => [
-                SettingsHelper::get( 'apiAuthUsername' ),
-                SettingsHelper::get( 'apiAuthPassword' ),
+                $pbsApiUsername,
+                $pbsApiPassword,
             ]
         ]);
 
@@ -186,9 +245,9 @@ class SynchronizeHelper
     // Private Static Methods
     // =========================================================================
     
-    private static function getCraftFieldHandleByApiHandle( $fieldApiHandle )
+    private static function getCraftFieldHandleByApiHandle( $fieldApiHandle, $settingName = 'apiColumnFields' )
     {
-        $fieldsToSearch = SettingsHelper::get( 'apiColumnFields' );
+        $fieldsToSearch = SettingsHelper::get( $settingName );
         $fieldHandles   = array_column( $fieldsToSearch, ConstantAbstract::API_COLUMN_FIELD_API_INDEX );
         $foundIndex     = array_search( $fieldApiHandle, $fieldHandles );
 
@@ -205,5 +264,21 @@ class SynchronizeHelper
         }
 
         return $fieldHandle;
+    }
+    
+    private static function getApiRuleByApiHandle( $fieldApiHandle, $settingName = 'apiColumnFields' )
+    {
+        $fieldsToSearch = SettingsHelper::get( $settingName );
+        $fieldHandles   = array_column( $fieldsToSearch, ConstantAbstract::API_COLUMN_FIELD_API_INDEX );
+        $foundIndex     = array_search( $fieldApiHandle, $fieldHandles );
+
+        if( $foundIndex === false ) {
+            return false;
+        }
+
+        $foundField = $fieldsToSearch[ $foundIndex ];
+        $fieldRule  = ( isset( $foundField[ ConstantAbstract::API_COLUMN_FIELD_RULE_INDEX ] ) ) ? $foundField[ ConstantAbstract::API_COLUMN_FIELD_RULE_INDEX ] : false;
+
+        return $fieldRule;
     }
 }

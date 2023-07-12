@@ -17,6 +17,7 @@
                 this.addListener($('#syncrhonizeshowbtn'), 'activate', 'synchronizeShow');
                 this.addListener($('#syncrhonizesinglebtn'), 'activate', 'synchronizeSingle');
                 this.addListener($('#syncrhonizeallbtn'), 'activate', 'synchronizeAll');
+                this.addListener($('#syncrhonizeshowentriesbtn'), 'activate', 'synchronizeShowEntries');
                 this.addListener($('#addshowsite'), 'activate', 'addShowSite');
                 this.addListener($('#cleanallbtn'), 'activate', 'cleanGarbageEntries');
 
@@ -209,6 +210,35 @@
                         }
                     } else {
                     	$( '#syncrhonizeallbtn' ).removeClass( 'disabled' );
+                    }
+
+                }, this));
+            },
+
+            synchronizeShowEntries: function() {
+
+                $( '#syncrhonizeshowentriesbtn' ).addClass( 'disabled' );
+
+                Craft.postActionRequest('mediamanager/synchronize/synchronize-show-entries', {}, $.proxy(function(response, textStatus) {
+
+                    if (textStatus === 'success') {
+                        if (response.success) {
+                            Craft.cp.displayNotice(Craft.t('mediamanager', 'Synchronize for show entries started.'));
+                            setTimeout( function() {
+                                location.href = Craft.getUrl( 'mediamanager/entries/');
+                            }, 1000);
+                        }
+                        else if (response.errors) {
+                            $( '#syncrhonizeshowentriesbtn' ).removeClass( 'disabled' );
+                            var errors = this.flattenErrors(response.errors);
+                            Craft.cp.displayError(Craft.t('mediamanager', 'Could not start synchronize:') + "\n\n" + errors.join("\n") );
+                        }
+                        else {
+                            $( '#syncrhonizeshowentriesbtn' ).removeClass( 'disabled' );
+                            Craft.cp.displayError();
+                        }
+                    } else {
+                        $( '#syncrhonizeshowentriesbtn' ).removeClass( 'disabled' );
                     }
 
                 }, this));

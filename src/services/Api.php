@@ -11,6 +11,7 @@
 namespace papertiger\mediamanager\services;
 
 use Craft;
+use craft\helpers\App;
 use craft\base\Component;
 use craft\base\Element;
 use craft\helpers\UrlHelper;
@@ -22,6 +23,7 @@ use yii\base\Exception;
 use papertiger\mediamanager\MediaManager;
 use papertiger\mediamanager\jobs\MediaSync;
 use papertiger\mediamanager\jobs\MediaClean;
+use papertiger\mediamanager\jobs\ShowEntriesSync;
 use papertiger\mediamanager\helpers\SettingsHelper;
 use papertiger\mediamanager\helpers\SynchronizeHelper;
 
@@ -44,11 +46,26 @@ class Api extends Component
         self::$sectionMediaHandle     = SettingsHelper::get( 'mediaSection' );
         self::$sectionUsedMediaHandle = SettingsHelper::get( 'mediaUsedBySection' );
 
+        $pbsApiUsername = '';
+        $pbsApiPassword = '';
+
+        if( method_exists( 'Craft', 'parseEnv' ) ) {
+
+            $pbsApiUsername = Craft::parseEnv( '$PBS_API_BASIC_AUTH_USERNAME' );
+            $pbsApiPassword = Craft::parseEnv( '$PBS_API_BASIC_AUTH_PASSWORD' );
+        }
+
+        if( method_exists( 'App', 'parseEnv' ) ) {
+
+            $pbsApiUsername = App::parseEnv( '$PBS_API_BASIC_AUTH_USERNAME' );
+            $pbsApiPassword = App::parseEnv( '$PBS_API_BASIC_AUTH_PASSWORD' );
+        }
+
         self::$apiBaseUrl = SettingsHelper::get( 'apiBaseUrl' );
         self::$apiAuth    = [
             'auth' => [
-                SettingsHelper::get( 'apiAuthUsername' ),
-                SettingsHelper::get( 'apiAuthPassword' ),
+                $pbsApiUsername,
+                $pbsApiPassword,
             ]
         ];
     }
@@ -83,7 +100,7 @@ class Api extends Component
         return false;
     }
 
-    public function synchronizeShow( $show, $forceRegenerateThumbnail )
+    public function synchronizeShow( $show, $siteId, $forceRegenerateThumbnail )
     {
 
         if( !$show->apiKey ) {
@@ -125,6 +142,34 @@ class Api extends Component
 
         return true;
     }
+
+    public function synchronizeShowEntries( $shows )
+    {
+        foreach( $shows as $show ) {
+            
+            if( $show->apiKey ) {
+
+                Craft::$app->queue->push( new ShowEntriesSync([
+
+                    'apiKey'      => $show->apiKey,
+                    'title'       => $show->name . ' (Show)',
+                    'auth'        => self::$apiAuth
+                ]));
+            }
+        }
+
+        return true;
+    }
+		
+		public function getApiBaseUrl()
+		{
+			return self::$apiBaseUrl;
+		}
+		
+		public function getApiAuth()
+		{
+			return self::$apiAuth;
+		}
 
     public function runClean()
     {
@@ -206,7 +251,7 @@ class Api extends Component
                 $mediaManagerId = $entry[ 'mediaManagerId' ];
                 
                 if( array_key_exists( $mediaManagerId, $duplicateCounter ) ) {
-                    $duplicateCounter[ $mediaManagerId ]++; 
+                    $duplicateCounter[ $mediaManagerId ]++;
                 } else {
                     $duplicateCounter[ $mediaManagerId ] = 1;
                 }
@@ -282,8 +327,8 @@ class Api extends Component
 
     // Private Methods
     // =========================================================================
-     
-    private function runSynchronizeShow( $show, $forceRegenerateThumbnail ) 
+    
+    private function runSynchronizeShow( $show, $forceRegenerateThumbnail )
     {
         Craft::$app->queue->push( new MediaSync([
 

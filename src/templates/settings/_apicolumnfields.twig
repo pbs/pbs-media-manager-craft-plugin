@@ -12,7 +12,22 @@
 
 {% endfor %}
 
+{% set allusers   = [ { label: '— Select Craft User —', value: '' } ] %}
+{% for user in users %}
+    {% set allusers = allusers | merge([{ label: user.username, value: user.username }]) %}
+{% endfor %}
+
 <div id="tab-api-column-fields" class="hidden">
+    {{ forms.selectField({
+        required: true,
+        name: 'apiCraftUser',
+        label: 'Craft User for API',
+        instructions: 'This Craft user will be used when the API populating entries in Craft.',
+        value: settings.apiCraftUser,
+        options: allusers,
+        errors: settings.getErrors( 'apiCraftUser' )
+    }) }}
+    
     {{ forms.textField({
         required: true,
         name: 'apiBaseUrl',
@@ -21,26 +36,6 @@
         value: settings.apiBaseUrl,
         errors: settings.getErrors( 'apiBaseUrl' )
     }) }}
-
-    <div class="flex">
-        {{ forms.textField({
-            required: true,
-            name: 'apiAuthUsername',
-            label: 'Basic Auth',
-            instructions: 'Username',
-            fieldClass: 'flex-grow',
-            value: settings.apiAuthUsername,
-            errors: settings.getErrors( 'apiAuthUsername' )
-        }) }}
-        {{ forms.textField({
-            name: 'apiAuthPassword',
-            label: '&nbsp;',
-            instructions: 'Password',
-            fieldClass: 'flex-grow',
-            value: settings.apiAuthPassword,
-            errors: settings.getErrors( 'apiAuthPassword' )
-        }) }}
-    </div>
 
     <hr/>
 
@@ -66,6 +61,69 @@
                         {"value":"season","label":"Season"},{"value":"episode","label":"Episode"},
                     {"optgroup":"From PBS API","label":"From PBS API"},
                         {"value":"slug","label":"slug"},{"value":"title","label":"title"},{"value":"title_sortable","label":"title_sortable"},{"value":"description_short","label":"description_short"},{"value":"description_long","label":"description_long"},{"value":"object_type","label":"object_type"},{"value":"premiered_on","label":"premiered_on"},{"value":"encored_on","label":"encored_on"},{"value":"is_excluded_from_dfp","label":"is_excluded_from_dfp"},{"value":"duration","label":"duration"},{"value":"content_rating","label":"content_rating"},{"value":"content_rating_descriptor","label":"content_rating_descriptor"},{"value":"can_embed_player","label":"can_embed_player"},{"value":"tags","label":"tags"},{"value":"language","label":"language"},{"value":"funder_message","label":"funder_message"},{"value":"images","label":"images"},{"value":"updated_at","label":"updated_at"},{"value":"countries","label":"countries"},{"value":"geo_profile","label":"geo_profile"},{"value":"topics","label":"topics"},{"value":"platforms","label":"platforms"},{"value":"player_code","label":"player_code"},{"value":"availabilities","label":"availabilities"},{"value":"related_links","label":"related_links"},{"value":"related_promos","label":"related_promos"},{"value":"parent_tree","label":"parent_tree"},{"value":"has_captions","label":"has_captions"}
+                ]
+            },
+            { 
+                heading: 'Use existing Craft Field', 
+                handle: 'existingField',
+                info: 'If selected, you dont need to fill <strong>Craft Field Name</strong>, <strong>Craft Field Handle</strong> and <strong>Craft Field Type</strong>.',
+                width: '20%',
+                type: 'select',
+                options: existingFields
+            },
+            { 
+                heading: 'Craft Field Name', 
+                handle: 'fieldName',
+                info: 'If <strong>Use existing Craft Field</strong> selected, you dont need to fill this field since it will be ignored.',
+                width: '20%',
+                type: 'singleline',
+                placeholder: 'Field Name'
+            },
+            { 
+                heading: 'Craft Field Handle', 
+                handle: 'fieldHandle',
+                info: 'Make sure field handle is in camelCase format and unique, existing field with same Field Handle will be used if found. If <strong>Use existing Craft Field</strong> selected, you dont need to fill this field since it will be ignored.',
+                width: '20%',
+                type: 'singleline',
+                placeholder: 'Field Name'
+            },
+            { 
+                heading: 'Craft Field Type', 
+                handle: 'fieldType',
+                info: 'If <strong>Use existing Craft Field</strong> selected, you dont need to fill this field since it will be ignored.',
+                width: '20%',
+                type: 'select',
+                options: [
+                    {"label":"— Select Field Type —"},
+                    {"value":"craft\\fields\\Assets","label":"Assets"},{"value":"craft\\fields\\Date","label":"Date/Time"},{"value":"craft\\fields\\Lightswitch","label":"Lightswitch"},{"value":"craft\\fields\\PlainText","label":"Plain Text"},{"value":"craft\\redactor\\Field","label":"Redactor"},{"value":"craft\\fields\\Tags","label":"Tags"}
+                ]
+            }
+        ]
+    }) }}
+
+    <hr/>
+
+    {{ forms.editableTableField({
+        required: true,
+        name: 'showApiColumnFields',
+        label: 'Show : API Column & Fields',
+        instructions: "Map PBS API fields with Craft fields for Show. Fields will be added/updated after Save settings.",
+        id: 'showApiColumnFields',
+        addRowLabel: 'Add a field',
+        rows: settings.showApiColumnFields,
+        errors: settings.getErrors( 'showApiColumnFields' ),
+        cols: [
+            { 
+                heading: 'API Field', 
+                handle: 'apiField',
+                width: '20%',
+                type: 'select',
+                options: [
+                    {"label":"— Select Field —"},
+                    {"optgroup":"Special Field","label":"Special Field"},
+                        {"value":"show_images","label":"Images"},{"value":"show_last_synced","label":"Last Synced"},{"value":"show_media_manager_id","label":"Media Manager ID"},
+                    {"optgroup":"From PBS API","label":"From PBS API"},
+                        {"value":"description_short","label":"description_short"},{"value":"description_long","label":"description_long"}
                 ]
             },
             { 

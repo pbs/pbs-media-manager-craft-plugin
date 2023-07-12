@@ -23,55 +23,12 @@ class SetupHelper
     
     public static function registerRequiredComponents()
     {
-        self::registerApiUser();
+        // Craft CMS API User is now using plugin settings
     }
 
     public static function unregisterRequiredComponents()
     {
-        // Disabled to see if it's required, considering it will also remove all entries
-        // Should it transfers the content to another admin?
-        // self::unregisterApiUser();
+        // No Craft CMS API User removal
     }
-
-
-    // Private Methods
-    // =========================================================================
-
-    private static function checkApiUserExists()
-    {
-        if( $user = Craft::$app->getUsers()->getUserByUsernameOrEmail( ConstantAbstract::API_USER_USERNAME ) ) {
-            return $user;
-        }
-
-        return false;
-    }
-
-    private static function registerApiUser()
-    {
-        if( self::checkApiUserExists() ) {
-            return;
-        }
-
-        $user = new User();
-        $user->username    = ConstantAbstract::API_USER_USERNAME;
-        $user->firstName   = ConstantAbstract::API_USER_FIRSTNAME;
-        $user->lastName    = ConstantAbstract::API_USER_LASTNAME;
-        $user->email       = ConstantAbstract::API_USER_EMAIL;
-        $user->newPassword = ConstantAbstract::API_USER_PASSWORD;
-        $user->admin       = true;
-
-        if( !Craft::$app->getElements()->saveElement( $user, false ) ) {
-            throw new Exception( 'Failed to create user for API' );
-        }
-
-        Craft::$app->getUsers()->activateUser( $user );
-    }
-
-    private static function unregisterApiUser()
-    {
-        if( $user = self::checkApiUserExists() ) {
-            Craft::$app->getElements()->deleteElement( $user );
-        }
-    }
-
+    
 }

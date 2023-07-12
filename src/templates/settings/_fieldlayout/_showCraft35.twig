@@ -3,12 +3,12 @@
 <style type="text/css">
     .fld-tabcontent .slide-picker { display: none !important; }
 </style>
-<div id="fieldlayoutform" class="customfieldlayout layoutdesigner">
+<div id="showfieldlayoutform" class="customshowfieldlayout layoutdesigner">
 
     <div class="fld-workspace">
         <div class="fld-tabs">
 
-            {% for tabName, tabFields in settings.fieldLayout %}
+            {% for tabName, tabFields in settings.showFieldLayout %}
             <div class="fld-tab">
                 <div class="tabs">
                     <div class="tab sel draggable">
@@ -53,7 +53,7 @@
             {% for group in groups %}
                 {% set totalUnselected = 0 %}
                 {% for field in group.fields %}
-                    {% if field.handle not in settingFields %}
+                    {% if field.handle not in showSettingFields %}
                         {% set totalUnselected = totalUnselected + 1 %}
                     {% endif %}
                 {% endfor %}
@@ -61,7 +61,7 @@
                 <div class="fld-field-group{% if totalUnselected == 0 %} hidden{% endif %}" data-name="{{ group.name|replace('"', '')|lower }}">
                     <h6>{{ group.name }}</h6>
                     {% for field in group.fields %}
-                        {% set selected = field.handle in settingFields %}
+                        {% set selected = field.handle in showSettingFields %}
                         <div class="fld-field fld-element unused {% if selected %} hidden{% endif %}" data-attribute="{{ field.handle }}"  data-id="{{ group.name }}-{{ loop.index }}" data-type="craft\fieldlayoutelements\CustomField" data-has-custom-width="" data-keywords="{{ field.handle }} {{ field.name }}">
                             <div class="field-name">
                                 <div class="fld-element-label">

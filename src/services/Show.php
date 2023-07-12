@@ -66,18 +66,21 @@ class Show extends Component
                 }
             }
 
-            $returnedActiveShow = [
-                'id'     => $activeShow[ 'id' ],
-                'name'   => $activeShow[ 'name' ],
-                'apiKey' => $activeShow[ 'apiKey' ],
-                'siteId' => $activeShow[ 'siteId' ],
-            ];
+            if( $activeShow ) {
 
-            if( $returnedActiveShow[ 'siteId' ] ) {
-                $returnedActiveShow[ 'siteId' ] = json_decode( $returnedActiveShow['siteId'] );
+                $returnedActiveShow = [
+                    'id'     => $activeShow[ 'id' ],
+                    'name'   => $activeShow[ 'name' ],
+                    'apiKey' => $activeShow[ 'apiKey' ],
+                    'siteId' => $activeShow[ 'siteId' ],
+                ];
+
+                if( $returnedActiveShow[ 'siteId' ] ) {
+                    $returnedActiveShow[ 'siteId' ] = json_decode( $returnedActiveShow['siteId'] );
+                }
+
+                return $returnedActiveShow;
             }
-
-            return $returnedActiveShow;
         }
 
         return $show->find()

@@ -95,6 +95,25 @@ class SynchronizeController extends Controller
         );
     }
 
+    public function actionShowEntries()
+    {
+
+        $shows = MediaManager::getInstance()->show->getShow();
+
+        return $this->renderTemplate(
+            self::SYNCHRONIZE_TEMPLATE_PATH,
+            [
+                'activeShow' => [
+                    'id' => 'show-entries',
+                    'name' => 'Show Entries',
+                    'apiKey' => null,
+                    'siteId' => 1,
+                ],
+                'shows' => $shows
+            ]
+        );
+    }
+
 
     public function actionSynchronizeShow()
     {
@@ -192,6 +211,36 @@ class SynchronizeController extends Controller
         }
 
         $synchronize = MediaManager::getInstance()->api->synchronizeAll( $validatedShows, $forceRegenerateThumbnail );
+
+        return $this->asJson([
+            'success' => true
+        ]);
+    }
+
+    public function actionSynchronizeShowEntries()
+    {
+        $shows = MediaManager::getInstance()->show->getShow();
+        $validatedShows = [];
+        $request = Craft::$app->getRequest();
+
+        foreach( $shows as $show ) {
+            
+            if( $show->apiKey && $show->name ) {
+                
+                $show[ 'siteId' ] = json_decode( $show[ 'siteId' ] );
+                array_push( $validatedShows, $show );
+            }
+        }
+
+        if( !count( $validatedShows ) ) {
+
+            return $this->asJson([
+                'success' => false,
+                'errors' => [ 'No valid Show API Key registered, please register one.' ],
+            ]);
+        }
+
+        $synchronize = MediaManager::getInstance()->api->synchronizeShowEntries( $validatedShows );
 
         return $this->asJson([
             'success' => true

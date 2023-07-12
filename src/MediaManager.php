@@ -34,6 +34,8 @@ use papertiger\mediamanager\services\Show as ShowService;
 use papertiger\mediamanager\services\OldSettings as OldSettingsService;
 use papertiger\mediamanager\helpers\aftersavesettings\FieldLayoutHelper;
 use papertiger\mediamanager\helpers\aftersavesettings\ApiColumnFieldsHelper;
+use papertiger\mediamanager\helpers\aftersavesettings\ShowFieldLayoutHelper;
+use papertiger\mediamanager\helpers\aftersavesettings\ShowApiColumnFieldsHelper;
 use papertiger\mediamanager\helpers\aftersavesettings\OldSettingsHelper;
 
 class MediaManager extends Plugin
@@ -90,6 +92,8 @@ class MediaManager extends Plugin
     {
         ApiColumnFieldsHelper::process();
         FieldLayoutHelper::process();
+        ShowApiColumnFieldsHelper::process();
+        ShowFieldLayoutHelper::process();
         OldSettingsHelper::process();
     }
 
@@ -127,6 +131,11 @@ class MediaManager extends Plugin
             'label' => self::t( 'Clean Garbage Entries' ),
             'url'   => 'mediamanager/clean'
         ];
+				
+				$navigation['subnav']['stale-media'] = [
+					'label' => self::t('Manage Stale Media'),
+					'url'   => 'mediamanager/stale-media'
+				];
 
         $navigation[ 'subnav' ][ 'settings' ] = [
             'label' => self::t( 'Settings' ),
@@ -158,9 +167,11 @@ class MediaManager extends Plugin
                 $event->rules[ 'mediamanager/synchronize/<entryId:\d+>' ]      = 'mediamanager/synchronize';
                 $event->rules[ 'mediamanager/synchronize/all' ]                = 'mediamanager/synchronize/all';
                 $event->rules[ 'mediamanager/synchronize/single' ]             = 'mediamanager/synchronize/single';
+                $event->rules[ 'mediamanager/synchronize/show-entries' ]       = 'mediamanager/synchronize/show-entries';
                 $event->rules[ 'mediamanager/synchronize/synchronize-show' ]   = 'mediamanager/synchronize/synchronize-show';
                 $event->rules[ 'mediamanager/synchronize/synchronize-single' ] = 'mediamanager/synchronize/synchronize-single';
                 $event->rules[ 'mediamanager/synchronize/synchronize-all' ]    = 'mediamanager/synchronize/synchronize-all';
+                $event->rules[ 'mediamanager/synchronize/synchronize-show-entries' ] = 'mediamanager/synchronize/synchronize-show-entries';
 
                 $event->rules[ 'mediamanager/clean' ] = 'mediamanager/synchronize/clean';
             }

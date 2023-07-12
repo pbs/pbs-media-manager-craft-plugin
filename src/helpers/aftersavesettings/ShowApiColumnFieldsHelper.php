@@ -27,7 +27,7 @@ use papertiger\mediamanager\MediaManager;
 use papertiger\mediamanager\base\ConstantAbstract;
 use papertiger\mediamanager\helpers\SettingsHelper;
 
-class ApiColumnFieldsHelper
+class ShowApiColumnFieldsHelper
 {
     // Public Static Methods
     // =========================================================================
@@ -35,7 +35,7 @@ class ApiColumnFieldsHelper
     public static function process()
     {   
         // Process API Column & Fields
-        $settingName = 'apiColumnFields';
+        $settingName = 'showApiColumnFields';
         $oldSetting  = MediaManager::getInstance()->oldsettings->get( $settingName );
         $oldValue    = [];
         $newValue    = SettingsHelper::get( $settingName );
@@ -168,7 +168,7 @@ class ApiColumnFieldsHelper
                 $fieldInformation[ 'allowLimit' ]                   = false;
                 $fieldInformation[ 'sources' ]                      = '*';
                 $fieldInformation[ 'viewMode' ]                     = 'large';
-                $fieldInformation[ 'selectionLabel' ]               = 'Add a ' . $field[ ConstantAbstract::API_COLUMN_FIELD_NAME_INDEX ];
+                $fieldInformation[ 'selectionLabel' ]               = 'Add ' . $field[ ConstantAbstract::API_COLUMN_FIELD_NAME_INDEX ];
             break;
 
             case 'craft\fields\Date':
@@ -183,7 +183,7 @@ class ApiColumnFieldsHelper
             break;
 
             case 'craft\fields\PlainText':
-                $fieldInformation[ 'type' ]  = PlainText::class;
+                $fieldInformation[ 'type' ] = PlainText::class;
             break;
 
             case 'craft\fields\Url':

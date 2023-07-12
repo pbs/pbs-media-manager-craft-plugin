@@ -25,7 +25,10 @@ class OldSettingsHelper
     private static $settingsToStore = [
         'apiColumnFields',
         'mediaSection',
-        'fieldLayout'
+        'fieldLayout',
+        'showSection',
+        'showApiColumnFields',
+        'showFieldLayout'
     ];
 
 

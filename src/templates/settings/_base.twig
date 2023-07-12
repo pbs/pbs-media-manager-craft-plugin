@@ -21,6 +21,7 @@
 {% set mediaSectionInfo = 'Section to be used as Media entries.' ~ ( settings.mediaSection ? '' : ' <a target="_blank" href="'~ url( 'settings/sections/new' ) ~'">Create a blank section here.</a>' ) %}
 {% set mediaAssetInfo   = 'Asset Volume to store Media thumbnails and images.' ~ ( settings.mediaAssetVolume ? '' : ' <a target="_blank" href="'~ url( 'settings/assets/volumes/new' ) ~'">Create new Asset Volume here.</a>' ) %}
 {% set mediaFieldInfo   = 'Field Group to store all Media fields.' ~ ( settings.mediaFieldGroup ? '' : ' <a target="_blank" href="'~ url( 'settings/fields#newgroupbtn' ) ~'">Create a New group here.</a>' ) %}
+{% set showSectionInfo  = 'Section to be used as Show entries.' ~ ( settings.showSection ? '' : ' <a target="_blank" href="'~ url( 'settings/sections/new' ) ~'">Create a blank section here.</a>' ) %}
 
 <div id="tab-base">
     {{ forms.selectField({
@@ -64,5 +65,18 @@
         value: settings.mediaFieldGroup,
         options: fieldGroups,
         errors: settings.getErrors( 'mediaFieldGroup' )
+    }) }}
+
+    <hr/>
+
+    {{ forms.selectField({
+        required: true,
+        name: 'showSection',
+        label: 'Show Section',
+        instructions: showSectionInfo,
+        fieldClass: 'flex-grow',
+        value: settings.showSection,
+        options: sections,
+        errors: settings.getErrors( 'showSection' )
     }) }}
 </div>
