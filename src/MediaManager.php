@@ -49,6 +49,8 @@ class MediaManager extends Plugin
     // =========================================================================
     public $hasCpSettings = true;
     public $hasCpSection  = true;
+		
+		public $schemaVersion = '1.0.1';
 
 
     // Public Methods
