@@ -13,6 +13,7 @@ namespace papertiger\mediamanager\jobs;
 use Craft;
 use craft\db\Query;
 use craft\errors\ElementNotFoundException;
+use craft\helpers\DateTimeHelper;
 use craft\helpers\Queue;
 use craft\queue\BaseJob;
 use craft\elements\Entry;
@@ -355,6 +356,9 @@ class MediaSync extends BaseJob
             $entry->setFieldValues( $defaultFields );
 
             if( $availabilities->all_members->end ) {
+								if(DateTimeHelper::isInThePast($availabilities->all_members->end)){
+									return;
+								}
                 $tempExpiryDate    = strtotime( $availabilities->all_members->end );
                 $entry->expiryDate = new \DateTime( date( 'Y-m-d H:i:s', $tempExpiryDate ) );
             }
