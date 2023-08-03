@@ -59,12 +59,16 @@
 			try {
 				$data = $client->get($baseUrl . "assets/" . $entry->mediaManagerId . "?platform-slug=bento&platform-slug=partnerplayer", $apiAuth);
 				
-				$asset = Json::decode($data->getBody());
-				
-				if(count($asset['data'])){
-					return;
+				$asset = Json::decode($data->getBody(), false);
+				if(isset($asset->data)){
+					if(!isset($asset->data->attributes->availabilities->public, $asset->data->attributes->availabilities->all_members)){
+						return;
+					}
+					
+					if($asset->data->attributes->availabilities->public->start === null && $asset->data->attributes->availabilities->all_members->start === null){
+						$markForDeletion = 1;
+					}
 				}
-				$markForDeletion = 1;
 			} catch (ClientException $e) {
 				if ($e->getCode() === 404) {
 					$markForDeletion = 1;

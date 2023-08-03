@@ -89,7 +89,7 @@ class MediaSync extends BaseJob
 				
         $url         = $this->generateAPIUrl( $this->assetType, $this->apiKey, $this->singleAsset, $this->singleAssetKey );
         $mediaAssets = $this->fetchMediaAssets( $url );
-
+				//Craft::warning("Fetching this url: " . $url, __METHOD__);
         if( $this->singleAsset ) {
             $mediaAssets = [ $mediaAssets ];
         }
@@ -98,7 +98,6 @@ class MediaSync extends BaseJob
         $count       = 0;
 
         foreach( $mediaAssets as $mediaAsset ) {
-
             $assetAttributes = $mediaAsset->attributes;
             $availabilities  = $assetAttributes->availabilities;
 
@@ -184,7 +183,6 @@ class MediaSync extends BaseJob
                         $siteTags = [];
                         
                         foreach( $this->siteId as $siteId ) {
-	                          Craft::warning($siteId, __METHOD__);
                             $site = Craft::$app->sites->getSiteById( $siteId );
                             $tag = $this->findOrCreateTag( $site->name, $siteTagGroupId );
                             
@@ -354,19 +352,22 @@ class MediaSync extends BaseJob
 
             // Set field values and properties
             $entry->setFieldValues( $defaultFields );
-
+						
             if( $availabilities->all_members->end ) {
 								if(DateTimeHelper::isInThePast($availabilities->all_members->end)){
+									Craft::warning("{$mediaAsset->id} is expired. Exiting.");
 									return;
 								}
                 $tempExpiryDate    = strtotime( $availabilities->all_members->end );
                 $entry->expiryDate = new \DateTime( date( 'Y-m-d H:i:s', $tempExpiryDate ) );
             }
-
+						
+						$markForDeletion = 0;
+						if( $availabilities->public->start === null && $availabilities->all_members->start === null){
+							$markForDeletion = 1;
+						}
+	          $entry->setFieldValue('markedForDeletion', $markForDeletion);
             $entry->enabled = $this->isEntryEnabled( $availabilities->all_members->end );
-
-            // If the entry is being updated via Sync, we know that it is still enabled and thus should not be deleted.
-            $entry->setFieldValue('markedForDeletion', false);
 
             Craft::$app->getElements()->saveElement( $entry );
             $this->setProgress( $queue, $count++ / $totalAssets );
