@@ -47,6 +47,11 @@ abstract class ConstantAbstract
     const SHOW_API_COLUMN_FIELDS = [
         // Special Fields
         [ 'show_images', '', 'Images', 'showImages', 'craft\fields\Assets' ],
+	      [ 'show_mezzanine', '', 'Mezzanine', 'showMezzanine', 'craft\fields\Assets' ],
+				[ 'show_poster', '', 'Poster', 'showPoster', 'craft\fields\Assets' ],
+	      [ 'show_white_logo', '', 'White Logo', 'showWhiteLogo', 'craft\fields\Assets' ],
+	      [ 'show_black_logo', '', 'Black Logo', 'showBlackLogo', 'craft\fields\Assets' ],
+	      [ 'show_color_logo', '', 'Color Logo', 'showColorLogo', 'craft\fields\Assets' ],
         [ 'show_last_synced', '', 'Last Synced', 'showLastSynced', 'craft\fields\Date' ],
         [ 'show_media_manager_id', '', 'Media Manager ID', 'showMediaManagerId', 'craft\fields\PlainText' ],
 

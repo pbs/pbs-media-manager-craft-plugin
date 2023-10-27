@@ -241,7 +241,7 @@ class Api extends Component
                 $mediaManagerId = $entry[ 'mediaManagerId' ];
                 
                 if( array_key_exists( $mediaManagerId, $duplicateCounter ) ) {
-                    $duplicateCounter[ $mediaManagerId ]++; 
+                    $duplicateCounter[ $mediaManagerId ]++;
                 } else {
                     $duplicateCounter[ $mediaManagerId ] = 1;
                 }
@@ -317,8 +317,8 @@ class Api extends Component
 
     // Private Methods
     // =========================================================================
-     
-    private function runSynchronizeShow( $show, $forceRegenerateThumbnail ) 
+    
+    private function runSynchronizeShow( $show, $forceRegenerateThumbnail )
     {
         Craft::$app->queue->push( new MediaSync([
 
@@ -335,8 +335,6 @@ class Api extends Component
 
         foreach( $seasons->data as $season ) {
 
-            sleep( 3 );
-
             Craft::$app->queue->push( new MediaSync([
 
                 'siteId'      => $show->siteId,
@@ -351,8 +349,6 @@ class Api extends Component
             $episodes = $this->getEpisodesOfShow( $season->id );
 
             foreach( $episodes->data as $episode ) {
-
-                sleep( 3 );
 
                 Craft::$app->queue->push( new MediaSync([
 
@@ -370,8 +366,6 @@ class Api extends Component
         $specials = $this->getSpecialsOfShow( $show->apiKey );
 
         foreach( $specials->data as $special ) {
-
-            sleep( 3 );
 
             Craft::$app->queue->push( new MediaSync([
 
