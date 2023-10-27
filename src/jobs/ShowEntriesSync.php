@@ -278,8 +278,8 @@ class ShowEntriesSync extends BaseJob
 								
 	              case 'slug':
 									
-									if(isset($showAttributes['slug'])){
-										$defaultFields[SynchronizeHelper::getApiField($apiField, 'showApiColumnFields')] = $showAttributes['slug'];
+									if(isset($showAttributes->slug)){
+										$defaultFields[SynchronizeHelper::getApiField($apiField, 'showApiColumnFields')] = $showAttributes->slug;
 									}
 								
                 default:
